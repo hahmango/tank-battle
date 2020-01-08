@@ -35,12 +35,14 @@ public class Game extends Screen {
     /*
     int
     0000 0000, 0000 0000, 0000 0000, 0000 0000
-    |< tank>|         ##  |<      data      >|
+    |< tank>|  #### |<    x    >||<    y    >|
 
      */
     private static final int DATA_MASK = 0x0000ffff;
-    private static final int NEW_CONNECT = 0x00010000;
-    private static final int SET_TANK_ID = 0x00020000;
+    private static final int NEW_CONNECT = 0x00100000;
+    private static final int SET_TANK_ID = 0x00200000;
+    private static final int KEY_EVENT = 0x00400000;
+    private static final int MOUSE_EVENT = 0x00800000;
     private static final int TANK1 = 0x80000000;
     private static final int TANK2 = 0x40000000;
     private static final int TANK3 = 0x20000000;
@@ -171,6 +173,61 @@ public class Game extends Screen {
                 e.printStackTrace();
             }
         }
+        // TODO: onkeywithid放入，把set坐标改成发送数据，处理数据那里直接set坐标，区分鼠标和键盘，计算x y，不创建己方子弹列表，直接遍历所有子弹来区分
+        try {
+            // 运行状态时
+            if (gameStatus == GAME_RUNNING) {
+//            Tank thisTank = tanks.get(id);
+                // 坦克上移
+                if (keyCode == 'w' || keyCode == 'W' || keyCode == 38) {
+//                thisTank.setDirection(Tank.DIRECTION_UP);
+//                thisTank.move();
+                    client.sendToServer(keyCode | tankFlagList[localTankID] | KEY_EVENT);
+                }
+                // 坦克下移
+                if (keyCode == 's' || keyCode == 'S' || keyCode == 40) {
+                    client.sendToServer(keyCode | tankFlagList[localTankID] | KEY_EVENT);
+                }
+                // 坦克左移
+                if (keyCode == 'a' || keyCode == 'A' || keyCode == 37) {
+                    client.sendToServer(keyCode | tankFlagList[localTankID] | KEY_EVENT);
+                }
+                // 坦克右移
+                if (keyCode == 'd' || keyCode == 'D' || keyCode == 39) {
+                    client.sendToServer(keyCode | tankFlagList[localTankID] | KEY_EVENT);
+                }
+//            if (keyCode == 'j' || keyCode == 'J') {
+//                thisTank.fire(bullets);
+//            }
+//            // 火力切换
+//            if (keyCode == 'k' || keyCode == 'K') {
+//                thisTank.switchLevel();
+//            }
+                // 约定鼠标单击发送编码250
+//                if (keyCode == 250) {
+//                    thisTank.fire(bullets);
+//                }
+            }
+            // 等待状态时空格开始
+            else if (gameStatus == GAME_WAITING) {
+                if (keyCode == ' ') {
+                    // TODO:发送开始编码
+                    client.sendToServer(keyCode | tankFlagList[localTankID] | KEY_EVENT);
+                    gameStatus = GAME_RUNNING;
+                }
+            }
+            // 结束状态时空格继续
+            else if (gameStatus == GAME_OVER) {
+                if (keyCode == ' ') {
+                    // TODO:发送等待编码
+                    client.sendToServer(keyCode | tankFlagList[localTankID] | KEY_EVENT);
+                    setGameWaiting();
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     /**
@@ -219,55 +276,7 @@ public class Game extends Screen {
      */
     private void onKeyWithId(int id, int keyCode) {
 
-        // 运行状态时
-        if (gameStatus == GAME_RUNNING) {
-            Tank thisTank = tanks.get(id);
-            // 坦克上移
-            if (keyCode == 'w' || keyCode == 'W' || keyCode == 38) {
-                thisTank.setDirection(Tank.DIRECTION_UP);
-                thisTank.move();
-            }
-            // 坦克下移
-            if (keyCode == 's' || keyCode == 'S' || keyCode == 40) {
-                thisTank.setDirection(Tank.DIRECTION_DOWN);
-                thisTank.move();
-            }
-            // 坦克左移
-            if (keyCode == 'a' || keyCode == 'A' || keyCode == 37) {
-                thisTank.setDirection(Tank.DIRECTION_LEFT);
-                thisTank.move();
-            }
-            // 坦克右移
-            if (keyCode == 'd' || keyCode == 'D' || keyCode == 39) {
-                thisTank.setDirection(Tank.DIRECTION_RIGHT);
-                thisTank.move();
-            }
-//            if (keyCode == 'j' || keyCode == 'J') {
-//                thisTank.fire(bullets);
-//            }
-//            // 火力切换
-//            if (keyCode == 'k' || keyCode == 'K') {
-//                thisTank.switchLevel();
-//            }
-            // 约定鼠标单击发送编码250
-            if (keyCode == 250) {
-                thisTank.fire(bullets);
-            }
-        }
-        // 等待状态时空格开始
-        else if(gameStatus == GAME_WAITING){
-            if (keyCode == ' ') {
-                // TODO:发送开始编码
-                gameStatus = GAME_RUNNING;
-            }
-        }
-        // 结束状态时空格继续
-        else if(gameStatus == GAME_OVER){
-            if(keyCode == ' ') {
-                // TODO:发送等待编码
-                setGameWaiting();
-            }
-        }
+
     }
 
     @Override
