@@ -2,37 +2,37 @@ package com.tankwar;
 
 import java.awt.*;
 
-class TankPlace {
+public class TankPlace {
     static class Place{
         int x, y, direction;
 
-        Place(int x, int y, int direction) {
+        public Place(int x, int y, int direction) {
             this.x = x;
             this.y = y;
             this.direction = direction;
         }
     }
 
-    private static Image block = ImageUtil.blockImg;
-    private static Image background = ImageUtil.backgroundImg;
-    private static Image tank = ImageUtil.tankUP;
+    static Image block = ImageUtil.blockImg;
+    static Image background = ImageUtil.backgroundImg;
+    static Image tank = ImageUtil.tankLeft;
 
     // 初始位置分配数组
-    static final Place[] placeList = {
+    public static final Place[] placeList = {
             new Place(block.getWidth(null), block.getWidth(null), MovingObject.DIRECTION_DOWN), // 左上
             new Place( // 右上
-                    background.getWidth(null) - block.getWidth(null) - tank.getWidth(null),
-                    block.getWidth(null),
+                    background.getWidth(null) - block.getWidth(null) - ImageUtil.tankDown.getWidth(null),
+                    block.getHeight(null),
                     MovingObject.DIRECTION_DOWN
             ),
             new Place( // 左下
                     block.getWidth(null),
-                    background.getHeight(null) - block.getWidth(null) - tank.getWidth(null),
+                    background.getHeight(null) - block.getWidth(null) - ImageUtil.tankUP.getWidth(null),
                     MovingObject.DIRECTION_UP
             ),
             new Place( // 右下
-                    background.getWidth(null) - block.getWidth(null) - tank.getWidth(null),
-                    background.getHeight(null) - block.getWidth(null) - tank.getWidth(null),
+                    background.getWidth(null) - block.getWidth(null) - ImageUtil.tankUP.getWidth(null),
+                    background.getHeight(null) - block.getWidth(null) - ImageUtil.tankUP.getWidth(null),
                     MovingObject.DIRECTION_UP
             ),
             new Place( // 上中

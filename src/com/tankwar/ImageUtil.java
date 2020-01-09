@@ -15,6 +15,7 @@ class ImageUtil {
     static final Image tankRight = GraphicsUtils.loadFileImage("image/tankRight.png");
     static final Image pauseImg = GraphicsUtils.loadFileImage("image/gamePause.png");
     static final Image overImg = GraphicsUtils.loadFileImage("image/gameOver.png");
+    static final Image winImg = GraphicsUtils.loadFileImage("image/gameWin.png");
     static final Image bulletImg = GraphicsUtils.loadFileImage("image/bullet.png");
     static final Image blowImg = GraphicsUtils.loadFileImage("image/blow.png");
     static final Image blockImg = GraphicsUtils.loadFileImage("image/block.gif");

@@ -18,15 +18,18 @@ import java.util.*;
  */
 public class Game extends Screen {
     // 游戏运行状态
-    private static final int GAME_RUNNING = 1;
-    private static final int GAME_WAITING = 2;
+    private static final int GAME_WAITING = 1;
+    private static final int GAME_RUNNING = 2;
     private static final int GAME_OVER = 0;
     private static int gameStatus;
+    private static Image overImage = ImageUtil.overImg;
     // 游戏得分数据
     private static int score = 0;
     private static int highScore = 0;
     // 坦克列表
     private static List<Tank> tanks = new ArrayList<>();
+    // 存活的坦克的id
+    private static Set<Integer> aliveId = new HashSet<>();
     // 子弹对象列表
     private static List<Bullet> bullets = new ArrayList<>();
     // 我方坦克
@@ -58,10 +61,9 @@ public class Game extends Screen {
             TANK5, TANK6, TANK7, TANK8
     };
     private static Client client;
+    private static boolean isFirstConnect = true;
 
-//    static int tankList[] = new int[TANK_NUM_MAX]; // 存放所有坦克的列表
-//    private static int tankNum; // 本地存在的所有坦克数量
-    private static int localTankID; // 本机坦克，指向坦克列表的下标
+    private static int localTankID; // 本机坦克
     private static boolean hasLocalTank = false;
 
     // 创建一个线程用于监听服务器发来的数据
@@ -77,7 +79,6 @@ public class Game extends Screen {
         try {
             Game game = new Game();
             readThread.start();
-            client.sendToServer(NEW_CONNECT); // 告诉其他客户端有新的连接
             // 创建屏幕对象
             GameScene gs = new GameScene(
                     "坦克大战",
@@ -94,8 +95,6 @@ public class Game extends Screen {
             // 设置游戏图标
             gs.setIconImage("image/icon.png");
         } catch (ConcurrentModificationException ignored) {
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
@@ -108,12 +107,12 @@ public class Game extends Screen {
         // 设置图片为背景
         setBackground(ImageUtil.backgroundImg);
         // 设置为等待状态
-        setGameWaiting();
         try {
-            client = new Client("127.0.0.1", 8082);
+            client = new Client("127.0.0.1", 8081);
         } catch (IOException e) {
             e.printStackTrace();
         }
+        setGameWaiting();
         // 创建一个线程用于监听服务器发来的数据
         readThread = new Thread(() -> {
             int data;
@@ -126,6 +125,7 @@ public class Game extends Screen {
                 }
             }
         });
+        playSound("music/超级马里奥主题.mp3");
     }
 
 
@@ -147,7 +147,7 @@ public class Game extends Screen {
             drawTanks(graphics2D);
             // 画子弹
             drawBullet(graphics2D);
-            // 画等待/结束状态
+
             if (gameStatus != GAME_RUNNING) {
                 drawWhenNotRunning(graphics2D);
             }
@@ -238,20 +238,25 @@ public class Game extends Screen {
     private void processData(int data) {
 
         if ((data & NEW_CONNECT) != 0) {
-            if (hasLocalTank) {
-                tanks.add(generateTank(tanks.size()));
-                System.out.println("There is a new client online, create new tank for it");
+            aliveId.add(tanks.size());
+            tanks.add(generateTank(tanks.size()));
+            System.out.println("There is a new client online, create new tank for it");
+            if (!hasLocalTank && localTankID<tanks.size()) {
+                hasLocalTank = true;
+                myTank = tanks.get(localTankID);
             }
         }
         else if ((data & SET_TANK_ID) != 0) {
 
             // 第一次上线，先创建其他客户端已有的坦克，然后设置自己的坦克ID
-            hasLocalTank = true;
             localTankID = data & DATA_MASK;
-            for (int i=0; i<=localTankID; i++) {
-                tanks.add(generateTank(i));
+            if (isFirstConnect) {
+                isFirstConnect = false;
+                for (int i=0; i<localTankID; i++) {
+                    aliveId.add(i);
+                    tanks.add(generateTank(i));
+                }
             }
-            myTank = tanks.get(localTankID);
             System.out.println("I am the new client, my tank ID is "+localTankID);
         }
         else { // 解析数据
@@ -265,7 +270,10 @@ public class Game extends Screen {
             }
             System.out.println("The number "+tankID+" client send key : "+key);
             // 根据键值移动
-            onKeyWithId(tankID, key);
+            if (aliveId.contains(tankID)) {
+                onKeyWithId(tankID, key);
+            }
+            // 处理了IndexOutOfBoundsException
         }
     }
 
@@ -329,9 +337,9 @@ public class Game extends Screen {
     private void drawWhenNotRunning(Graphics2D graphics2D) {
         if(gameStatus == GAME_OVER){
             graphics2D.drawImage(
-                    ImageUtil.overImg,
-                    (ImageUtil.backgroundImg.getWidth(null) - ImageUtil.overImg.getWidth(null)) / 2,
-                    (ImageUtil.backgroundImg.getHeight(null) - ImageUtil.overImg.getHeight(null)) / 2,
+                    overImage,
+                    (ImageUtil.backgroundImg.getWidth(null) - overImage.getWidth(null)) / 2,
+                    (ImageUtil.backgroundImg.getHeight(null) - overImage.getHeight(null)) / 2,
                     null
             );
         }
@@ -400,19 +408,30 @@ public class Game extends Screen {
                 tank.decreaseHP(1);
                 if(!tank.isAlive()){
                     tank.setImg(ImageUtil.blowImg);
-                    Timer timer = new Timer();
-                    timer.schedule(new TimerTask() {
-                        @Override
-                        public void run() {
-                            try {
-                                tankIterator.remove();
-                            } catch (ConcurrentModificationException ignored) {
-                            }
-                        }
-                    }, 100);
 
+//                    Timer timer = new Timer();
+//                    timer.schedule(new TimerTask() {
+//                        @Override
+//                        public void run() {
+//                            try {
+//                                tanks.remove(tank);
+//                            } catch (ConcurrentModificationException ignored) {
+//                            }
+//                        }
+//                    }, 100);
+                    aliveId.remove(tank.getId());
+                    tanks.remove(tank);
                     // 如果当前坦克死亡
-                    if(tank.getId() == myTank.getId()){
+                    if(tank.getId() == localTankID){
+                        setGameOver();
+                    }
+                    else if(tanks.size() == 1){
+                        try {
+                            client.sendToServer(OVER);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        overImage = ImageUtil.winImg;
                         setGameOver();
                     }
                 }
@@ -503,10 +522,15 @@ public class Game extends Screen {
      * 设置游戏等待
      */
     private void setGameWaiting() {
-        // TODO:上线等待
         // 设置初始状态为等待中
         gameStatus = GAME_WAITING;
-        // TODO:登录等待人满开始
+        try {
+            client.sendToServer(NEW_CONNECT); // 告诉其他客户端有新的连接
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        score = 0;
+        overImage = ImageUtil.overImg;
     }
 
 
@@ -515,13 +539,13 @@ public class Game extends Screen {
      */
     private void setGameOver() {
         gameStatus = GAME_OVER;
-            // 清空子弹和敌机列表
-            bullets.clear();
-            tanks.clear();
-            // 更新最高得分
-            highScore = Math.max(score, highScore);
-            // 初始化
-            score = 0;
+        // 清空子弹和敌机列表
+        bullets.clear();
+        tanks.clear();
+        // 更新最高得分
+        highScore = Math.max(score, highScore);
+        // 初始化
+        hasLocalTank = false;
     }
 
 }
