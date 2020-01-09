@@ -9,6 +9,7 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
+import java.net.SocketException;
 import java.util.List;
 import java.util.*;
 
@@ -120,6 +121,8 @@ public class Game extends Screen {
                 try {
                     data = client.recvFromServer();
                     processData(data);
+                } catch (SocketException e) {
+                    System.exit(1);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -258,6 +261,16 @@ public class Game extends Screen {
                 }
             }
             System.out.println("I am the new client, my tank ID is "+localTankID);
+        }
+        else if ((data & QUIT) != 0) {
+            int tankID = data & DATA_MASK;
+            System.out.println("quit\n");
+            for (Tank tank : tanks) {
+                if (tank.getId() == tankID) {
+                    tanks.remove(tank);
+                    break;
+                }
+            }
         }
         else { // 解析数据
             int key = data & DATA_MASK;
