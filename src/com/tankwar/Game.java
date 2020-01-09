@@ -109,7 +109,7 @@ public class Game extends Screen {
         setBackground(ImageUtil.backgroundImg);
         // 设置为等待状态
         try {
-            client = new Client("127.0.0.1", 8081);
+            client = new Client("172.22.65.205", 8081);
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -87,8 +87,8 @@ public class MovingObject {
         if(x < blockSize || y < blockSize){
             return true;
         }
-        return x >= background.getWidth(null) - blockSize - img.getWidth(null)
-                || y >= background.getHeight(null) - blockSize - img.getHeight(null);
+        return x > background.getWidth(null) - blockSize - img.getWidth(null)
+                || y > background.getHeight(null) - blockSize - img.getHeight(null);
     }
 
     public int getX() {
