@@ -30,6 +30,6 @@
 
 ## 截图
 
-<img src=https://tva1.sinaimg.cn/large/007S8ZIlgy1ge2ktycw7hj30pk0hk7wi.jpg style="zoom:50%">
-
-<img src=https://tva1.sinaimg.cn/large/007S8ZIlgy1ge2kyyrbgnj30kg0e2e81.jpg style="zoom:60%">
+<div align=center><img src=https://tva1.sinaimg.cn/large/007S8ZIlgy1ge2ktycw7hj30pk0hk7wi.jpg height="50%" width="50%"></div>
+<br>
+<div align=center><img src=https://tva1.sinaimg.cn/large/007S8ZIlgy1ge2kyyrbgnj30kg0e2e81.jpg height="50%" width="50%"></div>
