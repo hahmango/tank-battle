@@ -1,4 +1,4 @@
-package com.tankwar;
+package com.tankbattle;
 
 import org.loon.framework.game.simple.utils.GraphicsUtils;
 

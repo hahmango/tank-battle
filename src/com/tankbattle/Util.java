@@ -1,4 +1,4 @@
-package com.tankwar;
+package com.tankbattle;
 
 public class Util {
     /**

@@ -1,10 +1,10 @@
-package com.tankwar;
+package com.tankbattle;
 
 import java.awt.*;
 
  class Bullet extends MovingObject {
     static final int SPEED1 = 3;
-    static final int SPEED2 = 3;
+    static final int SPEED2 = 6;
     // 子弹对应的坦克的id
     private int id;
 

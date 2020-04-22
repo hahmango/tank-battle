@@ -1,4 +1,4 @@
-package com.tankwar;
+package com.tankbattle;
 
 import java.awt.*;
 import java.util.List;

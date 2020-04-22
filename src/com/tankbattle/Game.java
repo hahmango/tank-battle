@@ -1,4 +1,4 @@
-package com.tankwar;
+package com.tankbattle;
 
 import com.Client;
 import org.loon.framework.game.simple.GameScene;
@@ -18,6 +18,8 @@ import java.util.*;
  * 程序的主要框架和主类，进行程序的所有功能的调用和一些draw方法的具体实现。
  */
 public class Game extends Screen {
+    private static final String HOST = "127.0.0.1"; // 服务器 IP 地址
+    private static final int PORT_NUM = 8080; // 服务器端口号
     // 游戏运行状态
     private static final int GAME_WAITING = 1;
     private static final int GAME_RUNNING = 2;
@@ -39,14 +41,15 @@ public class Game extends Screen {
     /*
     int
     0000 0000, 0000 0000, 0000 0000, 0000 0000
-    |< tank>|  #### |<    x    >||<    y    >|
+    |< tank>|     # ####  |<      data      >|
 
      */
     private static final int DATA_MASK = 0x0000ffff;
-    private static final int NEW_CONNECT = 0x00100000;
-    private static final int SET_TANK_ID = 0x00200000;
-    private static final int KEY_EVENT = 0x00400000;
-    private static final int MOUSE_EVENT = 0x00800000;
+    private static final int NEW_CONNECT = 0x00010000;
+    private static final int SET_TANK_ID = 0x00020000;
+    private static final int RUNNING = 0x00040000;
+    private static final int OVER = 0x00080000;
+    private static final int QUIT = 0x00100000;
     private static final int TANK1 = 0x80000000;
     private static final int TANK2 = 0x40000000;
     private static final int TANK3 = 0x20000000;
@@ -109,7 +112,7 @@ public class Game extends Screen {
         setBackground(ImageUtil.backgroundImg);
         // 设置为等待状态
         try {
-            client = new Client("172.22.65.205", 8081);
+            client = new Client(HOST, PORT_NUM);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -176,61 +179,6 @@ public class Game extends Screen {
                 e.printStackTrace();
             }
         }
-        // TODO: onkeywithid放入，把set坐标改成发送数据，处理数据那里直接set坐标，区分鼠标和键盘，计算x y，不创建己方子弹列表，直接遍历所有子弹来区分
-        try {
-            // 运行状态时
-            if (gameStatus == GAME_RUNNING) {
-//            Tank thisTank = tanks.get(id);
-                // 坦克上移
-                if (keyCode == 'w' || keyCode == 'W' || keyCode == 38) {
-//                thisTank.setDirection(Tank.DIRECTION_UP);
-//                thisTank.move();
-                    client.sendToServer(keyCode | tankFlagList[localTankID] | KEY_EVENT);
-                }
-                // 坦克下移
-                if (keyCode == 's' || keyCode == 'S' || keyCode == 40) {
-                    client.sendToServer(keyCode | tankFlagList[localTankID] | KEY_EVENT);
-                }
-                // 坦克左移
-                if (keyCode == 'a' || keyCode == 'A' || keyCode == 37) {
-                    client.sendToServer(keyCode | tankFlagList[localTankID] | KEY_EVENT);
-                }
-                // 坦克右移
-                if (keyCode == 'd' || keyCode == 'D' || keyCode == 39) {
-                    client.sendToServer(keyCode | tankFlagList[localTankID] | KEY_EVENT);
-                }
-//            if (keyCode == 'j' || keyCode == 'J') {
-//                thisTank.fire(bullets);
-//            }
-//            // 火力切换
-//            if (keyCode == 'k' || keyCode == 'K') {
-//                thisTank.switchLevel();
-//            }
-                // 约定鼠标单击发送编码250
-//                if (keyCode == 250) {
-//                    thisTank.fire(bullets);
-//                }
-            }
-            // 等待状态时空格开始
-            else if (gameStatus == GAME_WAITING) {
-                if (keyCode == ' ') {
-                    // TODO:发送开始编码
-                    client.sendToServer(keyCode | tankFlagList[localTankID] | KEY_EVENT);
-                    gameStatus = GAME_RUNNING;
-                }
-            }
-            // 结束状态时空格继续
-            else if (gameStatus == GAME_OVER) {
-                if (keyCode == ' ') {
-                    // TODO:发送等待编码
-                    client.sendToServer(keyCode | tankFlagList[localTankID] | KEY_EVENT);
-                    setGameWaiting();
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
     }
 
     /**
@@ -243,7 +191,7 @@ public class Game extends Screen {
         if ((data & NEW_CONNECT) != 0) {
             aliveId.add(tanks.size());
             tanks.add(generateTank(tanks.size()));
-            System.out.println("There is a new client online, create new tank for it");
+//            System.out.println("There is a new client online, create new tank for it");
             if (!hasLocalTank && localTankID<tanks.size()) {
                 hasLocalTank = true;
                 myTank = tanks.get(localTankID);
@@ -260,11 +208,11 @@ public class Game extends Screen {
                     tanks.add(generateTank(i));
                 }
             }
-            System.out.println("I am the new client, my tank ID is "+localTankID);
+//            System.out.println("I am the new client, my tank ID is "+localTankID);
         }
         else if ((data & QUIT) != 0) {
             int tankID = data & DATA_MASK;
-            System.out.println("quit\n");
+//            System.out.println("quit\n");
             for (Tank tank : tanks) {
                 if (tank.getId() == tankID) {
                     tanks.remove(tank);
@@ -281,7 +229,7 @@ public class Game extends Screen {
                     break;
                 }
             }
-            System.out.println("The number "+tankID+" client send key : "+key);
+//            System.out.println("The number "+tankID+" client send key : "+key);
             // 根据键值移动
             if (aliveId.contains(tankID)) {
                 onKeyWithId(tankID, key);
@@ -297,7 +245,65 @@ public class Game extends Screen {
      */
     private void onKeyWithId(int id, int keyCode) {
 
-
+        // 运行状态时
+        if (gameStatus == GAME_RUNNING) {
+            Tank thisTank = null;
+            for (Tank tank : tanks) {
+                if (tank.getId() == id) {
+                    thisTank = tank;
+                    break;
+                }
+            }
+            // 坦克上移
+            if (keyCode == 'w' || keyCode == 'W' || keyCode == 38) {
+                thisTank.setDirection(Tank.DIRECTION_UP);
+                thisTank.move();
+            }
+            // 坦克下移
+            if (keyCode == 's' || keyCode == 'S' || keyCode == 40) {
+                thisTank.setDirection(Tank.DIRECTION_DOWN);
+                thisTank.move();
+            }
+            // 坦克左移
+            if (keyCode == 'a' || keyCode == 'A' || keyCode == 37) {
+                thisTank.setDirection(Tank.DIRECTION_LEFT);
+                thisTank.move();
+            }
+            // 坦克右移
+            if (keyCode == 'd' || keyCode == 'D' || keyCode == 39) {
+                thisTank.setDirection(Tank.DIRECTION_RIGHT);
+                thisTank.move();
+            }
+//            if (keyCode == 'j' || keyCode == 'J') {
+//                thisTank.fire(bullets);
+//            }
+//            // 火力切换
+//            if (keyCode == 'k' || keyCode == 'K') {
+//                thisTank.switchLevel();
+//            }
+            // 约定鼠标单击发送编码250
+            if (keyCode == 250) {
+                thisTank.fire(bullets);
+            }
+        }
+        // 等待状态时空格开始
+        else if(gameStatus == GAME_WAITING){
+            if (keyCode == ' ') {
+                // 发送开始编码
+                try {
+                    client.sendToServer(RUNNING);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                gameStatus = GAME_RUNNING;
+            }
+        }
+        // 结束状态时空格继续
+        else if(gameStatus == GAME_OVER){
+            if(keyCode == '\n') {
+                setGameWaiting();
+            }
+        }
     }
 
     @Override
